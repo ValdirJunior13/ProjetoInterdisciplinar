@@ -30,14 +30,10 @@ pairs = [
 ]
 
 # entrada de dados do usuario
-
-
 def process_input(user_input):
     return user_input.lower()
 
 # Gerar Respostas
-
-
 def generate_response(user_input):
     for pattern, responses in pairs:
         match = nltk.matching.regexp.match(pattern, user_input)
