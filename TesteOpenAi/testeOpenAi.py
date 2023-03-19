@@ -1,55 +1,58 @@
-import openai
-import csv
 import pandas as pd
-# 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
 import openai
-import pandas as pd
+import nltk
+from nltk.corpus import stopwords
 
-# Define a chave da API da OpenAI
-openai.api_key = "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"
+# Lendo os dados do arquivo CSV
+df = pd.read_csv("Data.csv")
 
-# Define o modelo da OpenAI a ser usado pelo chatbot
-model_engine = "text-davinci-002"
+# Definindo a chave de acesso da API da OpenAI
+openai.api_key = "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"
 
-# Abre o arquivo CSV com as informações
-df = pd.read_csv("dados_uf.csv")
-
-# Função que processa a entrada do usuário e retorna uma resposta baseada nas informações
-
-
-def processar_entrada(input_text):
-    input_text = input_text.lower()
-
-    if "ufrpe" in input_text:
-        resposta = df[df["informacao"] == "ufrpe"]["valor"].values[0]
-    elif "matriculas" in input_text:
-        resposta = "Seu número de matrícula é: {}".format(
-            df[df["informacao"] == "matricula"]["valor"].values[0])
-    elif "calendario" in input_text:
-        resposta = df[df["informacao"] == "calendario"]["valor"].values[0]
-    else:
-        resposta = "Desculpe, não entendi o que você quis dizer."
-
-    return resposta
+# Definindo a pergunta sobre os dados do CSV
+question = input("Digite o que você quer saber sobre a ufrpe: ")
 
 
-# Loop principal do bot
-while True:
-    # Recebe uma entrada do usuário
-    user_input = input("Usuário: ")
+# Tokenizando a pergunta do usuário
+tokens = nltk.word_tokenize(question)
 
-    # Processa a entrada do usuário e obtém a resposta baseada nas informações
-    bot_response = processar_entrada(user_input)
+# Removendo stopwords (palavras comuns que não carregam muito significado)
+stop_words = set(stopwords.words('portuguese'))
+tokens = [word for word in tokens if word not in stop_words]
 
-    # Faz a chamada à API da OpenAI para obter uma resposta mais completa
-    response = openai.Completion.create(
-        engine=model_engine,
-        prompt=bot_response,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7,
-    )
+# Marcando cada token com sua respectiva classe gramatical
+tagged_tokens = nltk.pos_tag(tokens)
 
-    # Exibe a resposta completa do chatbot
-    print("Bot: " + response.choices[0].text.strip())
+# Selecionando apenas os substantivos e verbos
+keywords = [word for word, pos in tagged_tokens if pos.startswith(
+    'N') or pos.startswith('V')]
+
+# Filtrando as linhas do dataframe que contêm links relevantes
+filtered_df = df[df['links'].apply(lambda x: any(
+    keyword.lower() in str(x).lower() for keyword in keywords))]
+
+# Enviando a pergunta e recebendo a resposta usando o modelo davinci3
+response = openai.Completion.create(
+    engine="text-davinci-003",
+    prompt=question + "\n\nDados:\n" + df.to_string() + "\n\nResposta:",
+    temperature=0.8,
+    max_tokens=64,
+    stop="\n"
+)
+
+# Extraindo os links da coluna do CSV filtrada pelo NLTK
+filtered_links = filtered_df["links"].tolist()
+
+# Concatenando os links com a resposta
+answer = response["choices"][0]["text"] + "\nLinks relacionados:\n"
+# Adicione essas linhas após a extração das palavras-chave
+print("Palavras-chave extraídas:", keywords)
+
+# Adicione essas linhas após a filtragem dos links relevantes
+print("Links filtrados:")
+for link in filtered_links:
+    print(link)
+# Imprimindo a resposta e os links na tela
+print(answer)
+for link in filtered_links:
+    print(link)
