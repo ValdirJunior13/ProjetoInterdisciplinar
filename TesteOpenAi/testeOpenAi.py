@@ -1,58 +1,68 @@
-import pandas as pd
+# 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
 import openai
-import nltk
-from nltk.corpus import stopwords
+import csv
 
-# Lendo os dados do arquivo CSV
-df = pd.read_csv("Data.csv")
+# Substitua "sk-..." pela sua chave de API secreta
+openai.api_key = "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"
 
-# Definindo a chave de acesso da API da OpenAI
-openai.api_key = "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"
+# Escolha um modelo da open ai (por exemplo, davinci)
+model = "text-davinci-002"
 
-# Definindo a pergunta sobre os dados do CSV
-question = input("Digite o que você quer saber sobre a ufrpe: ")
+# Leia o arquivo CSV usando o módulo csv do python
+with open("Data.csv", encoding="utf-8") as csvfile:
+    reader = csv.reader(csvfile)
+    data = []
+    links = []
+    for i, row in enumerate(reader):
+        if i == 0:
+            continue  # ignora a primeira linha (cabeçalho)
+        parts = row[1].split(',')
+        data.append(parts[0])
+        links.append(parts[1])
+
+# Crie uma função que recebe uma pergunta do usuário e gera um texto usando o modelo da open ai
 
 
-# Tokenizando a pergunta do usuário
-tokens = nltk.word_tokenize(question)
+def generate_text(question):
+    # Construa a entrada para a API da open ai com os dados do CSV e a pergunta do usuário
+    input = "Dados:\n"
+    for i in range(len(data)):
+        input += f"{data[i]} - {links[i]}\n"
+    input += f"\nPergunta: {question}\n\nResposta:"
 
-# Removendo stopwords (palavras comuns que não carregam muito significado)
-stop_words = set(stopwords.words('portuguese'))
-tokens = [word for word in tokens if word not in stop_words]
+    # Envie uma requisição para a API da open ai com os parâmetros desejados
+    response = openai.Completion.create(
+        engine=model,
+        prompt=input,
+        temperature=0.5,
+        max_tokens=00,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0,
+        stop=["\n"]
+    )
 
-# Marcando cada token com sua respectiva classe gramatical
-tagged_tokens = nltk.pos_tag(tokens)
+    # Obtém a resposta gerada pelo modelo
+    answer = response["choices"][0]["text"]
 
-# Selecionando apenas os substantivos e verbos
-keywords = [word for word, pos in tagged_tokens if pos.startswith(
-    'N') or pos.startswith('V')]
+    # Procura o link correspondente à linha da coluna que foi usada para a resposta no CSV
+    link = ""
+    for i in range(len(data)):
+        if data[i] in answer:
+            link = links[i]
+            break
 
-# Filtrando as linhas do dataframe que contêm links relevantes
-filtered_df = df[df['links'].apply(lambda x: any(
-    keyword.lower() in str(x).lower() for keyword in keywords))]
+    # Concatena a resposta e o link, se houver
+    if link:
+        answer += f" (Fonte: {link})"
 
-# Enviando a pergunta e recebendo a resposta usando o modelo davinci3
-response = openai.Completion.create(
-    engine="text-davinci-003",
-    prompt=question + "\n\nDados:\n" + df.to_string() + "\n\nResposta:",
-    temperature=0.8,
-    max_tokens=64,
-    stop="\n"
-)
+    return answer
 
-# Extraindo os links da coluna do CSV filtrada pelo NLTK
-filtered_links = filtered_df["links"].tolist()
 
-# Concatenando os links com a resposta
-answer = response["choices"][0]["text"] + "\nLinks relacionados:\n"
-# Adicione essas linhas após a extração das palavras-chave
-print("Palavras-chave extraídas:", keywords)
-
-# Adicione essas linhas após a filtragem dos links relevantes
-print("Links filtrados:")
-for link in filtered_links:
-    print(link)
-# Imprimindo a resposta e os links na tela
-print(answer)
-for link in filtered_links:
-    print(link)
+# Testa a função com uma pergunta de exemplo
+while True:
+    question = input("Digite uma pergunta: ")
+    if question == "quit":
+        break
+    answer = generate_text(question)
+    print(answer)
