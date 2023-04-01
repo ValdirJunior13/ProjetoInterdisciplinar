@@ -1,24 +1,24 @@
 import csv
 import openai
+import re
 
 # Substitua "sk-..." pela sua chave de API secreta
-openai.api_key = "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"
+openai.api_key = ""
 
 # Escolha um modelo da open ai (por exemplo, davinci)
 model = "text-davinci-003"
 
-# Leia o arquivo CSV usando o módulo csv do python
+# Leia os arquivos CSV usando o módulo csv do python e armazene os dados em uma lista
 data = []
-with open("Data.csv", encoding="utf-8") as csvfile:
-    reader = csv.reader(csvfile)
-    for row in reader:
-        data.append(row[0])
+for filename in ["Data/Data.csv", "Data/Data2.csv", "Data/Data3.csv"]:
+    with open(filename, encoding="utf-8") as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            data.append(row[0])
 
 # Crie uma função que recebe uma pergunta do usuário e gera um texto usando o modelo da open ai
-
-
 def generate_text(question):
-    # Construa a entrada para a API da open ai com os dados do CSV e a pergunta do usuário
+    # Construa a entrada para a API da open ai com os dados dos CSVs e a pergunta do usuário
     input = "Dados:\n"
     for row in data:
         input += row + "\n"
@@ -28,7 +28,7 @@ def generate_text(question):
     response = openai.Completion.create(
         engine=model,
         prompt=input,
-        temperature=0.5,
+        temperature=0.9,
         max_tokens=100,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -42,9 +42,8 @@ def generate_text(question):
 
 # Teste a função com uma pergunta de exemplo
 while True:
-
     question = input("Digite uma pergunta: ")
     if question == "quit":
-        break
+        break   
     answer = generate_text(question)
     print(answer)
