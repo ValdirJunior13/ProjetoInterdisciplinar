@@ -5,7 +5,7 @@ import re
 # Substitua "sk-..." pela sua chave de API secreta
 openai.api_key = ""
 
-# Escolha um modelo da open ai (por exemplo, davinci)
+
 model = "text-davinci-003"
 
 # Leia os arquivos CSV usando o módulo csv do python e armazene os dados em uma lista
